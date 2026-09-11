@@ -1,4 +1,4 @@
-﻿const test = require('node:test');
+const test = require('node:test');
 const assert = require('node:assert');
 const fs = require('fs');
 const path = require('path');
@@ -308,3 +308,116 @@ test('File lock fallback resilience', () => {
     fs.writeFileSync = originalWrite;
   }
 });
+
+test('Universal QC Core checks functionality and zero user-specific leakage', () => {
+  const { runCoreChecks } = require('./qc_core_checks.js');
+  const dummyPdf = path.join(__dirname, 'dummy_qc_test.pdf');
+  fs.writeFileSync(dummyPdf, 'dummy content larger than 10KB'.padEnd(11000, 'x'));
+
+  const validHtml = `<html><body>${'All required content words '.repeat(170)} <strong>Bold1</strong> <strong>Bold2</strong> <strong>Bold3</strong> <strong>Bold4</strong> <strong>Bold5</strong> <strong>Bold6</strong> <strong>Bold7</strong> <strong>Bold8</strong> <strong>Bold9</strong> <strong>Bold10</strong> <strong>Bold11</strong> <strong>Bold12</strong> <strong>Bold13</strong> <strong>Bold14</strong> <strong>Bold15</strong> <strong>Bold16</strong> <strong>Bold17</strong> <strong>Bold18</strong> <strong>Bold19</strong> <strong>Bold20</strong> <strong>Bold21</strong> <strong>Bold22</strong> <strong>Bold23</strong> <strong>Bold24</strong> <strong>Bold25</strong> <strong>Bold26</strong> <strong>Bold27</strong> <strong>Bold28</strong> <strong>Bold29</strong> <strong>Bold30</strong> <strong>Bold31</strong> <strong>Bold32</strong> <strong>Bold33</strong> <strong>Bold34</strong> <strong>Bold35</strong> <strong>Bold36</strong> <strong>Bold37</strong> <strong>Bold38</strong> <strong>Bold39</strong> <strong>Bold40</strong> WHY I FIT ROLE PILLARS PROFESSIONAL EXPERIENCE EDUCATION NUMBERS TOOLS CERTIFICATIONS</body></html>`;
+
+  const validConfig = {
+    ...baseConfig,
+    WHY_I_FIT: "This is a detailed rationale with more than two hundred characters explaining the candidate capability match and analytical leadership across multiple projects and complex problem domains for the target organization.",
+    ROLE_PILLARS: [
+      { title: "Pillar 1", bullets: ["bullet 1"] },
+      { title: "Pillar 2", bullets: ["bullet 2"] },
+      { title: "Pillar 3", bullets: ["bullet 3"] }
+    ],
+    NUMBERS_THAT_MATTER: [{ label: "A", value: "1" }, { label: "B", value: "2" }],
+    TOOLS: "Python, SQL, Tableau, Power BI, Excel, Spark, R, BigQuery",
+    TOOLS_GROUPED: [{ category: "A", items: "1" }, { category: "B", items: "2" }, { category: "C", items: "3" }],
+    PROJECTS: [
+      {
+        id: "projects",
+        title: "Independent Projects",
+        type: "independent",
+        bullets: [
+          "Built CareerFlow AI product using LLMs [Project Link](https://example.com/)."
+        ]
+      }
+    ]
+  };
+
+  try {
+    const results = runCoreChecks(validConfig, validHtml, 2, dummyPdf, 11000);
+    assert.strictEqual(results.length, 15, "Should run 15 universal core checks");
+    const failed = results.filter(r => !r.pass);
+    assert.strictEqual(failed.length, 0, `All core checks should pass, failed: ${failed.map(f => f.name).join(', ')}`);
+
+    // Verify date hyphen-minus rejection (Rule 9)
+    const badDateConfig = {
+      ...validConfig,
+      EXPERIENCE: [{ ...validConfig.EXPERIENCE[0], dates: "May 2022 - Present" }]
+    };
+    const badDateResults = runCoreChecks(badDateConfig, validHtml, 2, dummyPdf, 11000);
+    const dateCheck = badDateResults.find(r => r.name.includes('Date en-dash'));
+    assert.ok(dateCheck, "Date check should exist");
+    assert.strictEqual(dateCheck.pass, false, "Hyphen in date should fail Rule 9");
+
+    // Verify Rule 7 non-fulltime role labeling check
+    const unlabeledPartTime = {
+      ...validConfig,
+      EXPERIENCE: [
+        validConfig.EXPERIENCE[0],
+        { id: "exp2", title: "Consultant", dates: "Jan 2024 – May 2024", type: "part-time", bullets: ["Test"] }
+      ]
+    };
+    const unlabeledResults = runCoreChecks(unlabeledPartTime, validHtml, 2, dummyPdf, 11000);
+    const rule7Check = unlabeledResults.find(r => r.name.includes('Rule 7'));
+    assert.ok(rule7Check, "Rule 7 check should exist");
+    assert.strictEqual(rule7Check.pass, false, "Unlabeled part-time experience should fail Rule 7");
+  } finally {
+    if (fs.existsSync(dummyPdf)) fs.unlinkSync(dummyPdf);
+  }
+});
+
+test('User-Configurable QC checks loading and evaluation', () => {
+  const { runUserChecks, loadUserRules } = require('./qc_user_checks.js');
+  const rules = loadUserRules(path.resolve(__dirname, '..'));
+  assert.ok(rules.bannedTools, "qc-rules.json should load bannedTools");
+  assert.ok(rules.requiredMetrics, "qc-rules.json should load requiredMetrics");
+
+  const testConfig = {
+    ...baseConfig,
+    ROLE_PILLARS: [
+      { title: "P1", bullets: [] }, { title: "P2", bullets: [] }, { title: "P3", bullets: [] },
+      { title: "P4", bullets: [] }, { title: "P5", bullets: [] }, { title: "P6", bullets: [] }
+    ],
+    SUMMARY: "Delivered 70+ enterprise workflows and Rs 5 Cr in savings with 61% and 40+ key metrics."
+  };
+
+  const results = runUserChecks(testConfig, "<html><body></body></html>", rules);
+  assert.ok(results.length >= 6, "Should evaluate user rules");
+  const failed = results.filter(r => !r.pass);
+  assert.strictEqual(failed.length, 0, `User checks should pass, failed: ${failed.map(f => f.name).join(', ')}`);
+
+  // Verify banned tool detection
+  const bannedConfig = { ...testConfig, SUMMARY: "Automated using Zapier" };
+  const bannedResults = runUserChecks(bannedConfig, "<html><body></body></html>", rules);
+  const zapierCheck = bannedResults.find(r => r.name.toLowerCase().includes('zapier'));
+  assert.ok(zapierCheck && !zapierCheck.pass, "Zapier in config should fail user check");
+});
+
+test('Zero-dependency WeasyPrint env resolution and .env loading', () => {
+  const { getWeasyPrintEnv, loadDotEnv } = require('./weasyprint_env.js');
+  const env = getWeasyPrintEnv();
+  assert.ok(env, "Should return an environment object");
+  assert.ok(typeof env.PATH === 'string', "PATH should be defined");
+
+  // Test explicit override precedence
+  const origDll = process.env.WEASYPRINT_DLL_DIRECTORIES;
+  try {
+    process.env.WEASYPRINT_DLL_DIRECTORIES = path.resolve(__dirname);
+    const overriddenEnv = getWeasyPrintEnv();
+    assert.strictEqual(overriddenEnv.WEASYPRINT_DLL_DIRECTORIES, path.resolve(__dirname), "Explicit env var should be respected");
+    assert.ok(overriddenEnv.PATH.includes(path.resolve(__dirname)), "Overridden DLL directory should be prepended to PATH");
+  } finally {
+    if (origDll !== undefined) {
+      process.env.WEASYPRINT_DLL_DIRECTORIES = origDll;
+    } else {
+      delete process.env.WEASYPRINT_DLL_DIRECTORIES;
+    }
+  }
+});
+
