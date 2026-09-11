@@ -1,0 +1,60 @@
+﻿{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "CandidateProfile",
+  "type": "object",
+  "required": ["name", "contact", "education"],
+  "properties": {
+    "name": {
+      "type": "object",
+      "required": ["first", "last", "full"],
+      "properties": {
+        "first": { "type": "string" },
+        "last": { "type": "string" },
+        "full": { "type": "string" }
+      }
+    },
+    "contact": {
+      "type": "object",
+      "required": ["phone", "email", "defaultLocation"],
+      "properties": {
+        "phone": { "type": "string" },
+        "email": { "type": "string" },
+        "linkedin": { "type": "string" },
+        "linkedinShort": { "type": "string" },
+        "portfolio": { "type": "string" },
+        "portfolioShort": { "type": "string" },
+        "defaultLocation": { "type": "string" }
+      }
+    },
+    "education": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["degree", "institution", "year"],
+        "properties": {
+          "degree": { "type": "string" },
+          "institution": { "type": "string" },
+          "year": { "type": "string" },
+          "description": { "type": "string" }
+        }
+      }
+    },
+    "certifications": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["title"],
+        "properties": {
+          "title": { "type": "string" },
+          "details": { "type": "string" }
+        }
+      }
+    },
+    "constants": {
+      "type": "object",
+      "properties": {
+        "LOCATION": { "type": "string" }
+      }
+    }
+  }
+}

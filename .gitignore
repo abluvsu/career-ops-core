@@ -1,0 +1,9 @@
+﻿node_modules/
+.venv/
+.env
+*.log
+*.tmp
+*.pdf
+*.docx
+__pycache__/
+.DS_Store

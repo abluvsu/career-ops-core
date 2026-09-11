@@ -1,0 +1,33 @@
+﻿{
+  "ArchetypeName": {
+    "EXPERIENCE": [
+      {
+        "id": "role_1",
+        "title": "Role Title",
+        "organization": "Organization Name",
+        "dates": "Month Year – Present",
+        "type": "full-time",
+        "minBullets": 4,
+        "bullets": [
+          "**Accomplished achievement 1** with metric and business outcome, keeping character length 95-115 chars.",
+          "**Accomplished achievement 2** with metric and business outcome, keeping character length 95-115 chars.",
+          "**Accomplished achievement 3** with metric and business outcome, keeping character length 95-115 chars.",
+          "**Accomplished achievement 4** with metric and business outcome, keeping character length 95-115 chars."
+        ]
+      }
+    ],
+    "PROJECTS": [
+      {
+        "id": "project_1",
+        "title": "Independent Projects",
+        "organization": "project.com",
+        "dates": "",
+        "type": "independent",
+        "label": "(Independent Project)",
+        "bullets": [
+          "**project.com (Independent Project):** Scaled key performance metric with organic growth and live telemetry dashboards. [View project](https://portfolio.com)"
+        ]
+      }
+    ]
+  }
+}
