@@ -1,0 +1,11 @@
+{
+  "bannedTools": ["Zapier", "n8n"],
+  "requiredMetrics": ["70+", "5 Cr", "61%", "40+"],
+  "portfolioUrlRequired": true,
+  "minPillars": 6,
+  "coverLetterClosingText": "I am open to relocation and can join within 15 days.",
+  "requiredDisclosures": {
+    "partTimeLabel": true,
+    "independentLabel": true
+  }
+}

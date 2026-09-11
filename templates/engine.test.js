@@ -64,8 +64,8 @@ const baseConfig = {
     {
       id: "primary",
       title: "Senior Manager, Strategy and Analytics",
-      organization: "ICICI Prudential Life Insurance",
-      dates: "May 2022 â€“ Present",
+      organization: "Acme Corporation",
+      dates: "May 2022 \u2013 Present",
       type: "full-time",
       minBullets: 4,
       bullets: [
@@ -78,12 +78,12 @@ const baseConfig = {
     {
       id: "consulting",
       title: "Product Management Consultant (Part Time)",
-      organization: "SARVM.AI, Bengaluru",
-      dates: "Jan 2024 â€“ May 2024",
+      organization: "Global Platform Solutions, Bengaluru",
+      dates: "Jan 2024 \u2013 May 2024",
       type: "part-time",
       label: "Part Time",
       bullets: [
-        "Consulted on data pipelines and product feature definition for Sarvm AI platform incubation phase."
+        "Consulted on data pipelines and product feature definition for platform incubation phase."
       ]
     }
   ],
@@ -93,7 +93,7 @@ const baseConfig = {
       title: "Independent Projects",
       type: "independent",
       bullets: [
-        "Built CareerFlow AI product using LLMs [Project Link â†—](https://example.com/)."
+        "Built AI Automation product using LLMs [Project Link \u2197](https://example.com/)."
       ]
     }
   ],
@@ -193,7 +193,7 @@ test('Fit-Guard visual checks', async () => {
     
     process.exitCode = 0;
     try {
-      await engine.runFitGuard(overflowHtml, 'dummy_pdf.pdf', true);
+      await engine.runFitGuard(overflowHtml, 'dummy_pdf.pdf', true, { FORMAT_TYPE: 'standard' });
       assert.fail("Expected runFitGuard to throw error for overflow");
     } catch (e) {
       assert.strictEqual(process.exitCode, 1, "Exit code should be set to 1 on overflow");
@@ -212,7 +212,7 @@ test('Fit-Guard visual checks', async () => {
 
     process.exitCode = 0;
     try {
-      await engine.runFitGuard(gapHtml, 'dummy_pdf.pdf', true);
+      await engine.runFitGuard(gapHtml, 'dummy_pdf.pdf', true, { FORMAT_TYPE: 'standard' });
       assert.fail("Expected runFitGuard to throw error for large gap");
     } catch (e) {
       assert.strictEqual(process.exitCode, 1, "Exit code should be set to 1 on large gap");
@@ -230,7 +230,7 @@ test('Fit-Guard visual checks', async () => {
     `);
 
     process.exitCode = 0;
-    const fitResult = await engine.runFitGuard(okHtml, 'dummy_pdf.pdf', true);
+    const fitResult = await engine.runFitGuard(okHtml, 'dummy_pdf.pdf', true, { FORMAT_TYPE: 'standard' });
     assert.strictEqual(fitResult.fitOk, true, "Perfect content should fit OK");
     assert.strictEqual(process.exitCode, 0, "Exit code should remain 0");
 
@@ -405,18 +405,32 @@ test('Zero-dependency WeasyPrint env resolution and .env loading', () => {
   assert.ok(env, "Should return an environment object");
   assert.ok(typeof env.PATH === 'string', "PATH should be defined");
 
-  // Test explicit override precedence
+  // Test explicit WEASYPRINT_DLL_DIRECTORIES override precedence
   const origDll = process.env.WEASYPRINT_DLL_DIRECTORIES;
+  const origMsys = process.env.MSYS_BIN;
   try {
+    delete process.env.MSYS_BIN;
     process.env.WEASYPRINT_DLL_DIRECTORIES = path.resolve(__dirname);
     const overriddenEnv = getWeasyPrintEnv();
     assert.strictEqual(overriddenEnv.WEASYPRINT_DLL_DIRECTORIES, path.resolve(__dirname), "Explicit env var should be respected");
     assert.ok(overriddenEnv.PATH.includes(path.resolve(__dirname)), "Overridden DLL directory should be prepended to PATH");
+
+    // Test MSYS_BIN fallback when WEASYPRINT_DLL_DIRECTORIES is unset
+    delete process.env.WEASYPRINT_DLL_DIRECTORIES;
+    process.env.MSYS_BIN = path.resolve(__dirname);
+    const msysEnv = getWeasyPrintEnv();
+    assert.strictEqual(msysEnv.WEASYPRINT_DLL_DIRECTORIES, path.resolve(__dirname), "MSYS_BIN should be used when WEASYPRINT_DLL_DIRECTORIES is unset");
+    assert.ok(msysEnv.PATH.includes(path.resolve(__dirname)), "MSYS_BIN directory should be prepended to PATH");
   } finally {
     if (origDll !== undefined) {
       process.env.WEASYPRINT_DLL_DIRECTORIES = origDll;
     } else {
       delete process.env.WEASYPRINT_DLL_DIRECTORIES;
+    }
+    if (origMsys !== undefined) {
+      process.env.MSYS_BIN = origMsys;
+    } else {
+      delete process.env.MSYS_BIN;
     }
   }
 });

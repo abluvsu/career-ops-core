@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "career-ops-core",
   "version": "2.0.0",
   "description": "Autonomous multi-user career ops compiler and agent engine",
@@ -11,6 +11,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "puppeteer": "^24.43.1",
     "typescript": "^5.0.0"
   }
 }

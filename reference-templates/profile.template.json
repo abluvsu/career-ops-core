@@ -1,0 +1,66 @@
+{
+  "name": {
+    "first": "{{FIRST_NAME}}",
+    "last": "{{LAST_NAME}}",
+    "full": "{{CANDIDATE_NAME}}"
+  },
+  "contact": {
+    "phone": "{{PHONE}}",
+    "email": "{{EMAIL}}",
+    "linkedin": "https://linkedin.com/in/{{LINKEDIN_HANDLE}}",
+    "linkedinShort": "linkedin.com/in/{{LINKEDIN_HANDLE}}",
+    "portfolio": "https://{{PORTFOLIO_DOMAIN}}/",
+    "portfolioShort": "{{PORTFOLIO_DOMAIN}}",
+    "defaultLocation": "{{LOCATION}}"
+  },
+  "experience": [
+    {
+      "id": "primary",
+      "title": "{{PRIMARY_TITLE}}",
+      "organization": "{{PRIMARY_ORGANIZATION}}",
+      "dates": "{{PRIMARY_START_DATE}} – Present",
+      "type": "full-time",
+      "minBullets": 4
+    },
+    {
+      "id": "secondary",
+      "title": "{{SECONDARY_TITLE}} (Part-Time)",
+      "organization": "{{SECONDARY_ORGANIZATION}}",
+      "dates": "{{SECONDARY_START_DATE}} – {{SECONDARY_END_DATE}}",
+      "type": "part-time",
+      "label": "Part-Time"
+    },
+    {
+      "id": "projects",
+      "title": "Independent Projects",
+      "organization": "{{PROJECT_NAME}}",
+      "dates": "",
+      "type": "independent",
+      "label": "(Independent Project)"
+    }
+  ],
+  "education": [
+    {
+      "degree": "{{DEGREE_1}}",
+      "institution": "{{INSTITUTION_1}}",
+      "year": "{{YEAR_1}}",
+      "description": "{{EDUCATION_DESCRIPTION_1}}"
+    },
+    {
+      "degree": "{{DEGREE_2}}",
+      "institution": "{{INSTITUTION_2}}",
+      "year": "{{YEAR_2}}",
+      "description": "{{EDUCATION_DESCRIPTION_2}}"
+    }
+  ],
+  "certifications": [
+    {
+      "title": "{{CERTIFICATION_TITLE_1}}",
+      "details": "{{CERTIFICATION_DETAILS_1}}"
+    },
+    {
+      "title": "{{CERTIFICATION_TITLE_2}}",
+      "details": "{{CERTIFICATION_DETAILS_2}}"
+    }
+  ]
+}

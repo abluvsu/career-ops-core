@@ -1,0 +1,75 @@
+{
+  "Generalist": {
+    "EXPERIENCE": [
+      {
+        "id": "primary",
+        "title": "{{PRIMARY_TITLE}}",
+        "organization": "{{PRIMARY_ORGANIZATION}}",
+        "dates": "{{PRIMARY_START_DATE}} – Present",
+        "type": "full-time",
+        "minBullets": 4,
+        "bullets": [
+          "**Delivered key initiative 1** achieving quantified metric and measurable operational business outcome.",
+          "**Engineered high impact system 2** reducing turnaround time and optimizing throughput across workflows.",
+          "**Led strategic initiative 3** driving significant cost savings and efficiency gains across functional teams.",
+          "**Architected scalable framework 4** ensuring consistent compliance, performance, and quality benchmarks."
+        ]
+      },
+      {
+        "id": "secondary",
+        "title": "{{SECONDARY_TITLE}} (Part-Time)",
+        "organization": "{{SECONDARY_ORGANIZATION}}",
+        "dates": "{{SECONDARY_START_DATE}} – {{SECONDARY_END_DATE}}",
+        "type": "part-time",
+        "label": "Part-Time",
+        "bullets": [
+          "**Consulted on core platform roadmap** and feature prioritization during initial incubation and deployment."
+        ]
+      }
+    ],
+    "PROJECTS": [
+      {
+        "id": "projects",
+        "title": "Independent Projects",
+        "organization": "{{PROJECT_DOMAIN}}",
+        "dates": "",
+        "type": "independent",
+        "label": "(Independent Project)",
+        "bullets": [
+          "**{{PROJECT_NAME}} (Independent Project):** Deployed full stack application serving active users. [Project Link ↗](https://{{PROJECT_DOMAIN}})"
+        ]
+      }
+    ]
+  },
+  "Specialist": {
+    "EXPERIENCE": [
+      {
+        "id": "primary",
+        "title": "{{SPECIALIST_TITLE}}",
+        "organization": "{{PRIMARY_ORGANIZATION}}",
+        "dates": "{{PRIMARY_START_DATE}} – Present",
+        "type": "full-time",
+        "minBullets": 4,
+        "bullets": [
+          "**Spearheaded specialized technical solution** improving accuracy and reducing processing latency by 35%.",
+          "**Designed data and operational architecture** processing large volume records with high reliability.",
+          "**Automated critical workflows** saving significant analyst hours annually across core enterprise operations.",
+          "**Pioneered best practices and standards** adopted across multi-disciplinary engineering and product teams."
+        ]
+      }
+    ],
+    "PROJECTS": [
+      {
+        "id": "projects",
+        "title": "Independent Projects",
+        "organization": "{{PROJECT_DOMAIN}}",
+        "dates": "",
+        "type": "independent",
+        "label": "(Independent Project)",
+        "bullets": [
+          "**Specialized Tool (Independent Project):** Open source automation tool with active community usage. [Project Link ↗](https://{{PROJECT_DOMAIN}})"
+        ]
+      }
+    ]
+  }
+}

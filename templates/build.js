@@ -3,13 +3,13 @@
  * UNIFIED BUILD — single command from partial_config to final PDF.
  *
  * Usage:
- *   node build.js --in partial_config.json --archetype Operator
+ *   node build.js --in partial_config.json --archetype Operator [--data-root <path>]
  *
  * Steps:
  *   1. assemble_config: merge partial + frozen bullets + defaults
  *   2. fast_iter: optimise spacing/content (100 passes, HTML-only)
  *   3. render: WeasyPrint → 2-page PDF
- *   4. qc20: run 20 QC checks
+ *   4. qc checks: run core + user QC checks
  *   5. report: pass/fail summary
  */
 const fs = require('fs');
@@ -19,11 +19,20 @@ const { execSync } = require('child_process');
 // ── CLI args ──────────────────────────────────────────────────────────
 const args = process.argv.slice(2);
 const params = {};
-for (let i = 0; i < args.length; i += 2) {
-  if (args[i].startsWith('--')) params[args[i].substring(2)] = args[i + 1];
+for (let i = 0; i < args.length; i++) {
+  if (args[i].startsWith('--')) {
+    const key = args[i].substring(2);
+    if (i + 1 < args.length && !args[i + 1].startsWith('--')) {
+      params[key] = args[i + 1];
+      i++;
+    } else {
+      params[key] = true;
+    }
+  }
 }
+
 if (!params['in'] || !params['archetype']) {
-  console.error('Usage: node build.js --in <partial_config.json> --archetype <Archetype_Name>');
+  console.error('Usage: node build.js --in <partial_config.json> --archetype <Archetype_Name> [--data-root <path>]');
   console.error('Archetypes: Operator, Builder, Strategist, Analyst, Transformation Lead, Domain Expert');
   process.exit(1);
 }
@@ -32,16 +41,27 @@ const partialPath = path.resolve(process.cwd(), params['in']);
 const archetype = params['archetype'];
 const outDir = process.cwd();
 const templatesDir = path.resolve(__dirname);
-const dataRoot = params['data-root'] ? path.resolve(process.cwd(), params['data-root']) : path.resolve(templatesDir, '..');
+
+function resolveDataRoot(inputPath, tplDir) {
+  if (inputPath) {
+    const resolved = path.resolve(process.cwd(), inputPath);
+    if (path.basename(resolved) === 'reference' && fs.existsSync(resolved)) {
+      return path.dirname(resolved);
+    }
+    return resolved;
+  }
+  const cwdRef = path.resolve(process.cwd(), 'reference');
+  if (fs.existsSync(cwdRef)) return process.cwd();
+  const rootRef = path.resolve(tplDir, '..', 'reference');
+  if (fs.existsSync(rootRef)) return path.resolve(tplDir, '..');
+  return path.resolve(tplDir, '..');
+}
+
+const dataRoot = resolveDataRoot(params['data-root'], templatesDir);
 
 // ── WeasyPrint env ────────────────────────────────────────────────────
-const msysBin = process.env.MSYS_BIN || path.join(process.env.SystemDrive || 'C:', 'msys64', 'mingw64', 'bin');
-const venvBin = process.env.VENV_BIN || path.resolve(templatesDir, '..', '.venv', 'Scripts');
-const pythonBin = process.env.PYTHON_BIN || (process.env.LOCALAPPDATA ? path.join(process.env.LOCALAPPDATA, 'Python', 'bin') : '');
-const wpEnv = Object.assign({}, process.env, { 
-  WEASYPRINT_DLL_DIRECTORIES: msysBin,
-  PATH: `${pythonBin};${venvBin};${process.env.PATH}`
-});
+const { getWeasyPrintEnv } = require(path.join(templatesDir, 'weasyprint_env.js'));
+const wpEnv = getWeasyPrintEnv(dataRoot);
 
 // ── Helpers ───────────────────────────────────────────────────────────
 function hr(label) { console.log(`\n${'═'.repeat(50)}\n  ${label}\n${'═'.repeat(50)}`); }
@@ -66,11 +86,8 @@ if (!bulletLibrary[archetype]) {
 const frozenBullets = bulletLibrary[archetype];
 const partialConfig = JSON.parse(fs.readFileSync(partialPath, 'utf8'));
 
-const userRulesPath = path.join(dataRoot, 'reference', 'qc-rules.json');
-let userRules = {};
-if (fs.existsSync(userRulesPath)) {
-  try { userRules = JSON.parse(fs.readFileSync(userRulesPath, 'utf8').replace(/^\uFEFF/, '')); } catch (e) {}
-}
+const { loadUserRules } = require(path.join(templatesDir, 'qc_user_checks.js'));
+const userRules = loadUserRules(dataRoot);
 
 const profilePath = path.join(dataRoot, 'reference', 'profile.json');
 let candidateProfile = null;
@@ -82,10 +99,16 @@ if (fs.existsSync(profilePath)) {
   }
 }
 
+const proofBankPath = path.join(dataRoot, 'reference', 'proof-bank.md');
+if (fs.existsSync(proofBankPath)) {
+  process.env.PROOF_BANK_PATH = proofBankPath;
+}
+
 const assembledConfig = {
   ...defaults,
   ...(candidateProfile ? { PROFILE: candidateProfile } : {}),
   ...(userRules.portfolioUrlRequired !== undefined ? { PORTFOLIO_URL_REQUIRED: userRules.portfolioUrlRequired } : {}),
+  ...(fs.existsSync(proofBankPath) ? { PROOF_BANK_PATH: proofBankPath } : {}),
   ...partialConfig,
   EXPERIENCE: frozenBullets.EXPERIENCE,
   ...(frozenBullets.PROJECTS ? { PROJECTS: frozenBullets.PROJECTS } : {}),
@@ -95,8 +118,9 @@ const assembledConfig = {
 if (assembledConfig.EXPERIENCE) {
   assembledConfig.EXPERIENCE = assembledConfig.EXPERIENCE.map((exp, idx) => {
     const copy = { ...exp };
-    if (idx === 0 && partialConfig.ROLE_INTRO) copy.intro = partialConfig.ROLE_INTRO;
-    if (idx === 1 && partialConfig.SARVM_INTRO) copy.intro = partialConfig.SARVM_INTRO;
+    if (idx === 0 && (partialConfig.ROLE_INTRO || partialConfig.PRIMARY_ROLE_INTRO)) copy.intro = partialConfig.ROLE_INTRO || partialConfig.PRIMARY_ROLE_INTRO;
+    if (idx === 1 && (partialConfig.SECONDARY_ROLE_INTRO || partialConfig.ROLE_INTRO_2)) copy.intro = partialConfig.SECONDARY_ROLE_INTRO || partialConfig.ROLE_INTRO_2;
+    if (exp.id && partialConfig[`${exp.id.toUpperCase()}_INTRO`]) copy.intro = partialConfig[`${exp.id.toUpperCase()}_INTRO`];
     return copy;
   });
 }
@@ -119,12 +143,7 @@ try {
 }
 
 // Pillar check
-const userRulesPathPre = path.join(dataRoot, 'reference', 'qc-rules.json');
-let userRulesPre = {};
-if (fs.existsSync(userRulesPathPre)) {
-  try { userRulesPre = JSON.parse(fs.readFileSync(userRulesPathPre, 'utf8')); } catch (e) {}
-}
-const minPillars = userRulesPre.minPillars !== undefined ? userRulesPre.minPillars : 6;
+const minPillars = userRules.minPillarsCount !== undefined ? userRules.minPillarsCount : (userRules.minPillars !== undefined ? userRules.minPillars : 6);
 if (!validatedConfig.ROLE_PILLARS || validatedConfig.ROLE_PILLARS.length < minPillars) {
   console.error(`FAIL: Need at least ${minPillars} ROLE_PILLARS, got ${validatedConfig.ROLE_PILLARS ? validatedConfig.ROLE_PILLARS.length : 0}`);
   process.exit(1);
@@ -168,8 +187,8 @@ function checkConfig(c) {
   const htmlLower = html.toLowerCase();
   const sections = ['why i fit', 'role pillars', 'professional experience', 'education', 'numbers', 'tools', 'certifications'];
   const missing = sections.filter(s => !htmlLower.includes(s));
-  const hasZapier = htmlLower.includes('zapier');
-  const hasN8n = htmlLower.includes('n8n');
+  const banned = Array.isArray(userRules.bannedTools) ? userRules.bannedTools : ['zapier', 'n8n'];
+  const hasBanned = banned.some(tool => htmlLower.includes(tool.toLowerCase()));
   const hyphenRe = /[-—]/;
   let hasHyphen = false;
   ['TAGLINE', 'SUMMARY', 'WHY_I_FIT'].forEach(f => { if (C[f] && hyphenRe.test(C[f])) hasHyphen = true; });
@@ -177,7 +196,7 @@ function checkConfig(c) {
   if (C.PROJECTS) C.PROJECTS.forEach(p => (p.bullets || []).forEach(b => { if (hyphenRe.test(b)) hasHyphen = true; }));
   if (C.PROJECT_BULLETS) C.PROJECT_BULLETS.forEach(b => { if (hyphenRe.test(b)) hasHyphen = true; });
   if (C.ROLE_PILLARS) C.ROLE_PILLARS.forEach(p => p.bullets.forEach(b => { if (hyphenRe.test(b)) hasHyphen = true; }));
-  const ok = missing.length === 0 && charCount > 2000 && boldCount >= 40 && !hasZapier && !hasN8n && !hasHyphen;
+  const ok = missing.length === 0 && charCount > 2000 && boldCount >= 40 && !hasBanned && !hasHyphen;
   return { ok, charCount, boldCount, missing };
 }
 
@@ -246,8 +265,8 @@ const { runCoreChecks } = require(path.join(templatesDir, 'qc_core_checks.js'));
 const { runUserChecks } = require(path.join(templatesDir, 'qc_user_checks.js'));
 
 const pdfSize = fs.existsSync(pdfPath) ? fs.statSync(pdfPath).size : 0;
-const coreResults = runCoreChecks(C, htmlContent, pageCount, pdfPath, pdfSize, userRules);
-const userResults = runUserChecks(C, htmlContent, userRules);
+const coreResults = runCoreChecks(C, htmlContent, pageCount, pdfPath, pdfSize, { ...userRules, dataRoot });
+const userResults = runUserChecks(C, htmlContent, userRules, { dataRoot });
 const results = [...coreResults, ...userResults];
 
 // ══════════════════════════════════════════════════════════════════════

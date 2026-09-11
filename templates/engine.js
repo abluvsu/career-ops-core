@@ -310,8 +310,6 @@ async function runFitGuard(htmlPath, pdfPath, isStrict = false, configOrPath = n
       C = configOrPath;
     } else if (typeof configOrPath === 'string' && fs.existsSync(configOrPath)) {
       try { C = JSON.parse(fs.readFileSync(configOrPath, 'utf8')); } catch (e) {}
-    } else if (fs.existsSync('config.json')) {
-      try { C = JSON.parse(fs.readFileSync('config.json', 'utf8')); } catch (e) {}
     }
 
     const isExtended = C.FORMAT_TYPE === 'extended';
