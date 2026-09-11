@@ -69,13 +69,17 @@ const partialConfig = JSON.parse(fs.readFileSync(partialPath, 'utf8'));
 const userRulesPath = path.join(dataRoot, 'reference', 'qc-rules.json');
 let userRules = {};
 if (fs.existsSync(userRulesPath)) {
-  try { userRules = JSON.parse(fs.readFileSync(userRulesPath, 'utf8')); } catch (e) {}
+  try { userRules = JSON.parse(fs.readFileSync(userRulesPath, 'utf8').replace(/^\uFEFF/, '')); } catch (e) {}
 }
 
 const profilePath = path.join(dataRoot, 'reference', 'profile.json');
 let candidateProfile = null;
 if (fs.existsSync(profilePath)) {
-  try { candidateProfile = JSON.parse(fs.readFileSync(profilePath, 'utf8')); } catch (e) {}
+  try {
+    candidateProfile = JSON.parse(fs.readFileSync(profilePath, 'utf8').replace(/^\uFEFF/, ''));
+  } catch (e) {
+    console.error(`ERROR: Failed to parse candidate profile at ${profilePath}:`, e.message);
+  }
 }
 
 const assembledConfig = {
