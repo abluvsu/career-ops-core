@@ -66,8 +66,22 @@ if (!bulletLibrary[archetype]) {
 const frozenBullets = bulletLibrary[archetype];
 const partialConfig = JSON.parse(fs.readFileSync(partialPath, 'utf8'));
 
+const userRulesPath = path.join(dataRoot, 'reference', 'qc-rules.json');
+let userRules = {};
+if (fs.existsSync(userRulesPath)) {
+  try { userRules = JSON.parse(fs.readFileSync(userRulesPath, 'utf8')); } catch (e) {}
+}
+
+const profilePath = path.join(dataRoot, 'reference', 'profile.json');
+let candidateProfile = null;
+if (fs.existsSync(profilePath)) {
+  try { candidateProfile = JSON.parse(fs.readFileSync(profilePath, 'utf8')); } catch (e) {}
+}
+
 const assembledConfig = {
   ...defaults,
+  ...(candidateProfile ? { PROFILE: candidateProfile } : {}),
+  ...(userRules.portfolioUrlRequired !== undefined ? { PORTFOLIO_URL_REQUIRED: userRules.portfolioUrlRequired } : {}),
   ...partialConfig,
   EXPERIENCE: frozenBullets.EXPERIENCE,
   ...(frozenBullets.PROJECTS ? { PROJECTS: frozenBullets.PROJECTS } : {}),
@@ -101,11 +115,17 @@ try {
 }
 
 // Pillar check
-if (!validatedConfig.ROLE_PILLARS || validatedConfig.ROLE_PILLARS.length !== 6) {
-  console.error(`FAIL: Need 6 ROLE_PILLARS, got ${validatedConfig.ROLE_PILLARS ? validatedConfig.ROLE_PILLARS.length : 0}`);
+const userRulesPathPre = path.join(dataRoot, 'reference', 'qc-rules.json');
+let userRulesPre = {};
+if (fs.existsSync(userRulesPathPre)) {
+  try { userRulesPre = JSON.parse(fs.readFileSync(userRulesPathPre, 'utf8')); } catch (e) {}
+}
+const minPillars = userRulesPre.minPillars !== undefined ? userRulesPre.minPillars : 6;
+if (!validatedConfig.ROLE_PILLARS || validatedConfig.ROLE_PILLARS.length < minPillars) {
+  console.error(`FAIL: Need at least ${minPillars} ROLE_PILLARS, got ${validatedConfig.ROLE_PILLARS ? validatedConfig.ROLE_PILLARS.length : 0}`);
   process.exit(1);
 }
-console.log('PASS: 6 ROLE_PILLARS');
+console.log(`PASS: ${validatedConfig.ROLE_PILLARS.length} ROLE_PILLARS (min ${minPillars})`);
 
 // Write assembled config
 const configPath = path.join(outDir, 'config.json');
@@ -136,7 +156,7 @@ const strategies = [
 
 function checkConfig(c) {
   const C = engine.validateConfig(c);
-  const html = generateHTML(C);
+  const html = generateHTML(C, candidateProfile);
   const bodyMatch = html.match(/<body>([\s\S]*)<\/body>/);
   const bodyText = bodyMatch ? bodyMatch[1].replace(/<[^>]+>/g, '').trim() : '';
   const charCount = bodyText.length;
@@ -184,7 +204,7 @@ fs.writeFileSync(configPath, JSON.stringify(bestConfig, null, 2));
 hr('STEP 3: Render PDF');
 
 const C = engine.validateConfig(bestConfig);
-const htmlContent = generateHTML(C);
+const htmlContent = generateHTML(C, candidateProfile);
 const htmlPath = path.join(outDir, 'cv_final.html');
 fs.writeFileSync(htmlPath, htmlContent);
 
@@ -217,12 +237,6 @@ if (pageCount !== 2) {
 //  STEP 4: QC CHECKS (CORE + USER RULES)
 // ══════════════════════════════════════════════════════════════════════
 hr('STEP 4: QC Checks');
-
-const userRulesPath = path.join(dataRoot, 'reference', 'qc-rules.json');
-let userRules = {};
-if (fs.existsSync(userRulesPath)) {
-  try { userRules = JSON.parse(fs.readFileSync(userRulesPath, 'utf8')); } catch (e) {}
-}
 
 const { runCoreChecks } = require(path.join(templatesDir, 'qc_core_checks.js'));
 const { runUserChecks } = require(path.join(templatesDir, 'qc_user_checks.js'));

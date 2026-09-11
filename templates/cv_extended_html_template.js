@@ -6,10 +6,18 @@
  *  - widows: 1; orphans: 1 → prevents single-line pulls to next page
  *  - Tight section/grid gaps
  */
-const path = require('path');
-const profile = require(path.resolve(__dirname, '../reference/profile.json'));
+let defaultProfile = {
+  name: { first: '', last: '', full: '' },
+  contact: { phone: '', email: '', linkedin: '', linkedinShort: '', portfolio: '', portfolioShort: '', defaultLocation: '' },
+  education: [],
+  certifications: []
+};
+try {
+  defaultProfile = require(path.resolve(__dirname, '../reference/profile.json'));
+} catch (e) {}
 
-module.exports.generateHTML = (C) => {
+module.exports.generateHTML = (C, profileOverride = null) => {
+  const profile = profileOverride || C.PROFILE || defaultProfile;
   const themeColor = C.THEME_COLOR || '#3A3A3A';
 
   const spacedHeader = (text) => text.toUpperCase();
@@ -89,7 +97,7 @@ module.exports.generateHTML = (C) => {
       html += `
         <div class="experience-item">
           <div class="exp-header">
-            <span><strong class="exp-title">${parseRich(titleText)}</strong> &nbsp;|&nbsp; <span class="exp-org">${parseRich(exp.organization || '')}</span></span>
+            <span><strong class="exp-title">${parseRich(titleText)}</strong>${exp.organization ? ` &nbsp;|&nbsp; <span class="exp-org">${parseRich(exp.organization)}</span>` : ''}</span>
             <span class="exp-date">${parseRich(exp.dates || '')}</span>
           </div>
           ${introText ? `<div class="role-intro">${parseRich(introText)}</div>` : ''}
@@ -141,9 +149,13 @@ module.exports.generateHTML = (C) => {
       <div class="spaced-header">${spacedHeader('NUMBERS THAT MATTER FOR THIS ROLE')}</div>
       ${C.NUMBERS_INTRO ? `<div class="numbers-intro">${parseRich(C.NUMBERS_INTRO)}</div>` : ''}
       <div class="numbers-grid">
-        ${C.NUMBERS_THAT_MATTER.map(n => `
-          <div class="number-item"><strong>${n.label}:</strong> ${parseRich(n.value)}</div>
-        `).join('')}
+        ${C.NUMBERS_THAT_MATTER.map(n => {
+          if (typeof n === 'string') {
+            return `<div class="number-item">${parseRich(n)}</div>`;
+          }
+          const label = n.label ? `<strong>${parseRich(n.label)}:</strong> ` : '';
+          return `<div class="number-item">${label}${parseRich(n.value || '')}</div>`;
+        }).join('')}
       </div>
     </div>
     `;
@@ -155,9 +167,10 @@ module.exports.generateHTML = (C) => {
     <div class="section">
       <div class="spaced-header">${spacedHeader('TOOLS AND TECHNICAL SKILLS')}</div>
       <div class="tools-grouped">
-        ${C.TOOLS_GROUPED.map(g => `
-          <div class="tool-row"><strong>${g.category}:</strong> ${g.items}</div>
-        `).join('')}
+        ${C.TOOLS_GROUPED.map(g => {
+          const items = g.items || g.tools || '';
+          return `<div class="tool-row"><strong>${parseRich(g.category || '')}:</strong> ${parseRich(items)}</div>`;
+        }).join('')}
       </div>
     </div>
     `;
@@ -336,10 +349,11 @@ module.exports.generateHTML = (C) => {
     <h1 class="name"><span style="font-weight:300;">${profile.name.first.toUpperCase()}</span> <span style="font-weight:700; color:var(--theme-color);">${profile.name.last.toUpperCase()}</span></h1>
     <div class="tagline">${C.TAGLINE}</div>
     <div class="contact">
-      <span class="contact-item"><i class="fas fa-phone"></i>${profile.contact.phone}</span>
-      <span class="contact-item"><i class="fas fa-envelope"></i>${profile.contact.email}</span>
-      <span class="contact-item"><i class="fab fa-linkedin"></i><a href="${profile.contact.linkedin}">${profile.contact.linkedinShort}</a></span>
-      <span class="contact-item"><i class="fas fa-map-marker-alt"></i>${C.LOCATION || profile.contact.defaultLocation}</span>
+      ${profile.contact.phone ? `<span class="contact-item"><i class="fas fa-phone"></i>${profile.contact.phone}</span>` : ''}
+      ${profile.contact.email ? `<span class="contact-item"><i class="fas fa-envelope"></i>${profile.contact.email}</span>` : ''}
+      ${(profile.contact.linkedinShort || profile.contact.linkedin) ? `<span class="contact-item"><i class="fab fa-linkedin"></i><a href="${profile.contact.linkedin || '#'}">${profile.contact.linkedinShort || profile.contact.linkedin}</a></span>` : ''}
+      ${(profile.contact.portfolioShort || profile.contact.portfolio) ? `<span class="contact-item"><i class="fas fa-globe"></i><a href="${profile.contact.portfolio || '#'}">${profile.contact.portfolioShort || profile.contact.portfolio}</a></span>` : ''}
+      ${(C.LOCATION || profile.contact.defaultLocation) ? `<span class="contact-item"><i class="fas fa-map-marker-alt"></i>${C.LOCATION || profile.contact.defaultLocation}</span>` : ''}
     </div>
     <hr class="divider">
   </div>

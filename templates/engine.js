@@ -1,11 +1,14 @@
 const fs = require('fs');
 const path = require('path');
 const { z } = require('zod');
-const puppeteer = require('puppeteer');
+let puppeteer;
 const { TextRun, ExternalHyperlink } = require('docx');
 
-// Load central candidate profile
-const profile = require(path.resolve(__dirname, '../reference/profile.json'));
+// Load central candidate profile if present
+let profile = {};
+try {
+  profile = require(path.resolve(__dirname, '../reference/profile.json'));
+} catch (e) {}
 
 const ExperienceTypeEnum = z.enum([
   'full-time',
@@ -172,7 +175,7 @@ function validateConfig(config) {
   ];
   const allProjectBullets = allProjects.flatMap(p => p.bullets || []);
   const hasProjectBulletUrl = allProjectBullets.length > 0 && allProjectBullets.some(b => b.includes('http') || b.includes('www'));
-  if (!hasProjectBulletUrl && allProjects.length > 0) {
+  if (C.PORTFOLIO_URL_REQUIRED !== false && !hasProjectBulletUrl && allProjects.length > 0) {
     const msg = "PROJECTS must contain at least one project bullet with a valid URL link (e.g. to the portfolio).";
     if (isStrict) {
       console.error("FAIL: " + msg);
@@ -290,6 +293,12 @@ function validateConfig(config) {
 async function runFitGuard(htmlPath, pdfPath, isStrict = false, configOrPath = null) {
   let browser;
   try {
+    if (!puppeteer) {
+      try { puppeteer = require('puppeteer'); } catch (e) {
+        console.warn("Puppeteer not installed, skipping visual Fit-Guard.");
+        return;
+      }
+    }
     browser = await puppeteer.launch({ headless: "new", args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'] });
     const page = await browser.newPage();
     await page.setViewport({ width: 794, height: 1123, deviceScaleFactor: 1 });

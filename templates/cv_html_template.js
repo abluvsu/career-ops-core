@@ -288,7 +288,13 @@ function generateHTML(C) {
 
   <!-- CONTACT BAR -->
   <div class="contact-bar">
-    ${profile.contact.phone}&nbsp;&nbsp;|&nbsp;&nbsp;${profile.contact.email}&nbsp;&nbsp;|&nbsp;&nbsp;<a href="${profile.contact.linkedin}">${profile.contact.linkedinShort}</a>&nbsp;&nbsp;|&nbsp;&nbsp;<a href="${profile.contact.portfolio}">${profile.contact.portfolioShort}</a>&nbsp;&nbsp;|&nbsp;&nbsp;${parseRichHtml(location)}
+    ${[
+      profile.contact.phone,
+      profile.contact.email,
+      (profile.contact.linkedin ? `<a href="${profile.contact.linkedin}">${profile.contact.linkedinShort || profile.contact.linkedin}</a>` : ''),
+      (profile.contact.portfolio ? `<a href="${profile.contact.portfolio}">${profile.contact.portfolioShort || profile.contact.portfolio}</a>` : ''),
+      (location ? parseRichHtml(location) : '')
+    ].filter(Boolean).join('&nbsp;&nbsp;|&nbsp;&nbsp;')}
   </div>
 
   <hr class="divider">
@@ -318,8 +324,7 @@ function generateHTML(C) {
   <div class="role-header"${idx > 0 ? ' style="margin-top:4px;"' : ''}>
     <span class="role-left">
       <strong>${parseRichHtml(titleText)}</strong>
-      <span style="color:#888;">&nbsp;&nbsp;—&nbsp;&nbsp;</span>
-      <strong style="color:#4A4A4A;">${parseRichHtml(exp.organization || '')}</strong>
+      ${exp.organization ? `<span style="color:#888;">&nbsp;&nbsp;—&nbsp;&nbsp;</span><strong style="color:#4A4A4A;">${parseRichHtml(exp.organization)}</strong>` : ''}
     </span>
     <span class="role-dates">${parseRichHtml(exp.dates || '')}</span>
   </div>
@@ -358,11 +363,11 @@ function generateHTML(C) {
 
   <!-- EDUCATION -->
   <div class="section-header">Education</div>
-  ${renderEducation(profile.education)}
+  ${renderEducation(C.EDUCATION || profile.education)}
 
   <!-- CERTIFICATIONS -->
   <div class="section-header">Certifications &amp; Training</div>
-  ${renderCertifications(profile.certifications)}
+  ${renderCertifications(C.CERTIFICATIONS || profile.certifications)}
 
 </body>
 </html>`;
