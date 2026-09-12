@@ -42,6 +42,19 @@ const archetype = params['archetype'];
 const outDir = process.cwd();
 const templatesDir = path.resolve(__dirname);
 
+function safeWriteFileSync(filePath, content) {
+  for (let i = 0; i < 5; i++) {
+    try {
+      fs.writeFileSync(filePath, content);
+      return;
+    } catch (e) {
+      if (i === 4) throw e;
+      const waitTill = new Date(new Date().getTime() + 150);
+      while (waitTill > new Date()) {}
+    }
+  }
+}
+
 function resolveDataRoot(inputPath, tplDir) {
   if (inputPath) {
     const resolved = path.resolve(process.cwd(), inputPath);
@@ -118,9 +131,8 @@ const assembledConfig = {
 if (assembledConfig.EXPERIENCE) {
   assembledConfig.EXPERIENCE = assembledConfig.EXPERIENCE.map((exp, idx) => {
     const copy = { ...exp };
-    if (idx === 0 && (partialConfig.ROLE_INTRO || partialConfig.PRIMARY_ROLE_INTRO)) copy.intro = partialConfig.ROLE_INTRO || partialConfig.PRIMARY_ROLE_INTRO;
-    if (idx === 1 && (partialConfig.SECONDARY_ROLE_INTRO || partialConfig.ROLE_INTRO_2)) copy.intro = partialConfig.SECONDARY_ROLE_INTRO || partialConfig.ROLE_INTRO_2;
-    if (exp.id && partialConfig[`${exp.id.toUpperCase()}_INTRO`]) copy.intro = partialConfig[`${exp.id.toUpperCase()}_INTRO`];
+    if (idx === 0 && partialConfig.ROLE_INTRO) copy.intro = partialConfig.ROLE_INTRO;
+    if (idx === 1 && partialConfig.SARVM_INTRO) copy.intro = partialConfig.SARVM_INTRO;
     return copy;
   });
 }
@@ -152,7 +164,7 @@ console.log(`PASS: ${validatedConfig.ROLE_PILLARS.length} ROLE_PILLARS (min ${mi
 
 // Write assembled config
 const configPath = path.join(outDir, 'config.json');
-fs.writeFileSync(configPath, JSON.stringify(validatedConfig, null, 2));
+safeWriteFileSync(configPath, JSON.stringify(validatedConfig, null, 2));
 console.log(`Config written: ${configPath}`);
 
 // ══════════════════════════════════════════════════════════════════════
@@ -219,7 +231,7 @@ console.log(`Iterations: ${passCount}/100 PASS`);
 console.log(`Best: ${bestResult.charCount} chars, ${bestResult.boldCount} bolds`);
 
 // Save optimised config
-fs.writeFileSync(configPath, JSON.stringify(bestConfig, null, 2));
+safeWriteFileSync(configPath, JSON.stringify(bestConfig, null, 2));
 
 // ══════════════════════════════════════════════════════════════════════
 //  STEP 3: RENDER PDF VIA WEASYPRINT
@@ -229,7 +241,7 @@ hr('STEP 3: Render PDF');
 const C = engine.validateConfig(bestConfig);
 const htmlContent = generateHTML(C, candidateProfile);
 const htmlPath = path.join(outDir, 'cv_final.html');
-fs.writeFileSync(htmlPath, htmlContent);
+safeWriteFileSync(htmlPath, htmlContent);
 
 const tmpPdfPath = path.join(require('os').tmpdir(), `build_${Date.now()}.pdf`);
 execSync(`python -m weasyprint "${htmlPath}" "${tmpPdfPath}"`, { env: wpEnv, stdio: 'pipe' });
