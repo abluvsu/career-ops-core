@@ -1,8 +1,24 @@
 {
   "name": "career-ops-core",
   "version": "2.0.0",
-  "description": "Autonomous multi-user career ops compiler and agent engine",
+  "description": "Open-source autonomous career operations engine, ATS optimizer, and 2-page publication-grade CV compiler",
   "main": "templates/build.js",
+  "author": "Ashutosh Bhandekar",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/abluvsu/career-ops-core.git"
+  },
+  "keywords": [
+    "career-ops",
+    "resume-builder",
+    "ats-optimization",
+    "weasyprint",
+    "puppeteer",
+    "autonomous-agents",
+    "career-automation",
+    "cv-compiler"
+  ],
   "scripts": {
     "test": "node --test templates/engine.test.js"
   },
